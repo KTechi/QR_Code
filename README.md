@@ -7,7 +7,7 @@ Here is the [link](https://ktechi.github.io/QR_Code/).
 
 ## Command
 | Command | Description |
-|:--------|-------------|
+|---------|-------------|
 | clear | clear all log |
 | hide log | change visibility to 'hidden' |
 | show log | change visibility to 'visible' |
