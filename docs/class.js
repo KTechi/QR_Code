@@ -212,7 +212,7 @@ class QR_Code {
                     data_array.push(code)
                 }
 
-                // Character Nnumber Specifier
+                // Character Number Specifier
                 cns = this.VER <= 9 ? 8 : 16
                 for (let i = 0; i < cns; i++) bits.push((strLEN >> (cns-1-i)) % 2)
 
