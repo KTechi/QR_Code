@@ -2,8 +2,9 @@
 
 Here is the [link](https://ktechi.github.io/QR_Code/).
 
-<!-- ## Sample
-<img src="image/1.png" style="width:20rem;"/> <img src="image/2.png" style="width:20rem;"/> -->
+> ___Under Construction___  
+> QR_Code/docs/class.js  
+> 146: Data_and_ErrorCorrection()
 
 ## Command
 | Command | Description |
