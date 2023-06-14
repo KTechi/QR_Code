@@ -154,7 +154,10 @@ class QR_Code {
     }
 
     Data_and_ErrorCorrection() {
-        const LEN = this.LEN
+        function bit_push(num, n) {
+            for (let i = 0; i < n; i++)
+                bits.push((num >> n-1-i) % 2)
+        }
         const MODE = {
             'Number' : 1,
             'ABC123' : 2,
@@ -170,8 +173,7 @@ class QR_Code {
         let bits = []
 
         // Mode
-        for (let i = 0; i < 4; i++)
-            bits.push((MODE >> 3-i) % 2)
+        bit_push(MODE, 4)
 
         if (MODE === 1) {// Number Mode
             // 01234567 -> 012 345 67
@@ -184,27 +186,22 @@ class QR_Code {
             if      (this.VER <=  9) ccs = 10
             else if (this.VER <= 26) ccs = 12
             else if (this.VER <= 40) ccs = 14
-            for (let i = 0; i < ccs; i++)
-                bits.push((strLEN >> (ccs-1-i)) % 2)
+            bit_push(strLEN, ccs)
 
             // Data Array -> bits
             const last = data_array.pop()
             for (const code of data_array)
-            for (let i = 0; i < 10; i++)
-                bits.push((code >> 9-i) % 2)
-            let tmp = 0
-            if      (last <  10) tmp =  4
-            else if (last < 100) tmp =  7
-            else                 tmp = 10
-            for (let i = 0; i < tmp; i++)
-                bits.push((last >> tmp-1-i) % 2)
+                bit_push(code, 10)
+            if (strLEN % 3 === 1) bit_push(last,  4)
+            if (strLEN % 3 === 2) bit_push(last,  7)
+            if (strLEN % 3 === 0) bit_push(last, 10)
         } else if (MODE === 2) {// Character and Number Mode
             // AC-42 -> AC -4 2
             for (let i = 0, j = 0; i < str.length; i++, j++) {
                 const code = Character_Code.indexOf(str.charAt(i))
                 if (code === -1)
                     console.log('Unexpected letter:', str.charAt(i))
-                
+
                 if (i === strLEN - 1 && j % 2 === 0)
                     data_array.push(code) // Last letter
                 else if (j % 2 === 0)
@@ -217,19 +214,14 @@ class QR_Code {
             if      (this.VER <=  9) ccs =  9
             else if (this.VER <= 26) ccs = 11
             else if (this.VER <= 40) ccs = 13
-            for (let i = 0; i < ccs; i++)
-                bits.push((strLEN >> (ccs-1-i)) % 2)
+            bit_push(strLEN, ccs)
 
             // Data Array -> bits
             const last = data_array.pop()
             for (const code of data_array)
-            for (let i = 0; i < 11; i++)
-                bits.push((code >> 10-i) % 2)
-            let tmp = 0
-            if (last < 45) tmp =  6
-            else           tmp = 11
-            for (let i = 0; i < tmp; i++)
-                bits.push((last >> tmp-1-i) % 2)
+                bit_push(code, 11)
+            if (strLEN % 2 === 1) bit_push(last,  6)
+            if (strLEN % 2 === 0) bit_push(last, 11)
         } else if (MODE === 3) {// Connect Mode
             this.error_message = 'Connect Mode is NOT implemented yet.'
         } else if (MODE === 4) {// Byte Mode
@@ -244,13 +236,11 @@ class QR_Code {
             // String Length -> bits
             if      (this.VER <=  9) ccs =  8
             else if (this.VER <= 40) ccs = 16
-            for (let i = 0; i < ccs; i++)
-                bits.push((strLEN >> (ccs-1-i)) % 2)
+            bit_push(strLEN, ccs)
 
             // Data Array -> bits
             for (const code of data_array)
-            for (let i = 0; i < 8; i++)
-                bits.push((code >> 7-i) % 2)
+                bit_push(code, 8)
         } else if (MODE === 7) {// ECI Mode
             this.error_message = 'ECI Mode is NOT implemented yet.'
         } else if (MODE === 8) {// Kanji Mode
@@ -324,38 +314,30 @@ class QR_Code {
         data_ec_words.push(255)
 
         // Fill Module
-        let flag_y = 0
-        let c_i = 0 // code index
+        let flag = 0
         let b_i = 0 // bit index
+        let c_i = 0 // code index
+        let y0 = this.LEN - 1
+        let dy = -1
         filling:
-        for (let X = LEN-1; 0 <= X; X -= 2) {
-            if (flag_y % 2 === 0) {
-                for (let Y = LEN-1; 0 <= Y; Y--)
-                for (let x = 0; x < 2; x++)
-                    if (this.matrix[Y][X-x] === -1) {
-                        this.matrix[Y][X-x] = (data_ec_words[c_i] >> (7-b_i)) % 2
-                        b_i++
-                        if (b_i >= 8) {
-                            c_i++
-                            if (data_ec_words.length <= c_i) break filling
-                            b_i = 0
-                        }
-                    }
-            } else {
-                for (let Y = 0; Y < LEN; Y++)
-                for (let x = 0; x < 2; x++)
-                    if (this.matrix[Y][X-x] === -1) {
-                        this.matrix[Y][X-x] = (data_ec_words[c_i] >> (7-b_i)) % 2
-                        b_i++
-                        if (b_i >= 8) {
-                            c_i++
-                            if (data_ec_words.length <= c_i) break filling
-                            b_i = 0
-                        }
-                    }
+        for (let X = this.LEN - 1; 0 <= X; X -= 2) {
+            y0 = flag === 0 ? this.LEN - 1 : 0
+            dy = flag === 0 ? -1 : +1
+            for (let Y = y0; 0 <= Y && Y < this.LEN; Y += dy)
+            for (let x = 0; x < 2; x++) {
+                if (this.matrix[Y][X-x] !== -1)
+                    continue
+                this.matrix[Y][X-x] = (data_ec_words[c_i] >> (7-b_i)) % 2
+                b_i++
+                if (8 <= b_i) {
+                    c_i++
+                    if (data_ec_words.length <= c_i)
+                        break filling
+                    b_i = 0
+                }
             }
             if (X === 8) X = 7
-            flag_y++
+            flag = 1 - flag
         }
     }
 }
